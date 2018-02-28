@@ -1,18 +1,26 @@
 #coding=utf-8
 '''
 脚本功能：统计txt数据集中每个类别的个数、解决样本中类别不均衡的问题。
+样本类别均衡化处理：第一步，统计每个类别的个数以及图像只有某个类别的数据信息，使用图像中只有某个类别的图像信息来将其他类别扩充到类别最多的个数；
+					第二步，根据7:3的比例划分训练集、验证集；
 '''
 import  xml.dom.minidom
 import numpy as np
 import random
 
-
+bool_only_statistics_classNum = True 	# 改
+										#True: 只是统计xml_file中的每个类别的个数
+										#False: 对xml_file中的数据做样本类别均衡化处理，并按照7:3生成训练集、验证集。
+										
 class_name = ["handsup", "like", "hate", "sleep"] #改
 class_num = np.zeros(len(class_name))
 
-folder_path = "/opt/yushan/caffe/data/actions_new/" #改
-fw = open(folder_path + "new1.txt", 'w') #改
-xml_file = open(folder_path + "new.txt", 'r') 	#改
+folder_path = "/opt/zhangjing/caffe/caffe/data/actions_new/" #改
+#fw = open(folder_path + "new.txt", 'w') #改
+xml_file = open(folder_path + "all.txt", 'r') 	#改
+if not bool_only_statistics_classNum:
+	fw_train = open(folder_path + "train.txt", 'w') #改
+	fw_test = open(folder_path + "test.txt", 'w') #改
 
 handsup_lst = [] #存放xml中只有举手的样本#pictures/0123030269.jpg labels/0123030269.xml，目的是为后面样本类别均衡做准备
 like_lst = []
@@ -77,66 +85,88 @@ for l in lines:
 
 for j in range(len(class_name)):
 	print (class_name[j], class_num[j])
-	
-print ("only handsup num: ", len(handsup_lst))
-print ("only like num: ", len(like_lst))
-print ("only hate num: ", len(hate_lst))
-print ("only sleep num: ", len(sleep_lst))
+
+if not bool_only_statistics_classNum:	
+	print ("only handsup num: ", len(handsup_lst))
+	print ("only like num: ", len(like_lst))
+	print ("only hate num: ", len(hate_lst))
+	print ("only sleep num: ", len(sleep_lst))
 					
-class_num_max = np.max(class_num)
-class_num_maxclass = class_name[np.argmax(class_num)]
-print (class_num_maxclass)
+	class_num_max = np.max(class_num)
+	class_num_maxclass = class_name[np.argmax(class_num)]
 
-#like
-num = class_num_max - class_num[1]
-d = int(num/len(like_lst))
-r = int(num%len(like_lst))
-#print (d,r)
-like_lst1 = []
-for i in range(d):
-	like_lst1 = like_lst1 + like_lst
-like_lst1 = like_lst1 + like_lst[:r]
-#print (len(like_lst1))
+	print (class_num_maxclass)
 
-#hate
-num = class_num_max - class_num[2]
-d = int(num/len(hate_lst))
-r = int(num%len(hate_lst))
-#print (d,r)
-hate_lst1 = []
-for i in range(d):
-	hate_lst1 = hate_lst1 + hate_lst
-hate_lst1 = hate_lst1 + hate_lst[:r]
-#print (len(hate_lst1))
+	#handsup
+	handsup_lst1 = []
+	if len(handsup_lst)>0:
+		num = class_num_max - class_num[1]
+		d = int(num/len(handsup_lst))
+		r = int(num%len(handsup_lst))
+		#print (d,r)
+		
+		for i in range(d):
+			like_lst1 = handsup_lst1 + handsup_lst
+		handsup_lst1 = handsup_lst1 + handsup_lst[:r]
+	#print (len(like_lst1))
 
-#sleep
-num = class_num_max - class_num[3]
-d = int(num/len(sleep_lst))
-r = int(num%len(sleep_lst))
-#print (d,r)
-sleep_lst1 = []
-for i in range(d):
-	sleep_lst1 = sleep_lst1 + sleep_lst
-sleep_lst1 = sleep_lst1 + sleep_lst[:r]
-#print (len(sleep_lst1))	
 
-#样本类别均衡化处理、重写txt
-lines_new = lines + like_lst1 + hate_lst1 + sleep_lst1
-print (len(lines_new))
-for i in range(len(lines_new)):
-	l = lines_new[i]
-	fw.write(l)
-fw.close()
+	#like
+	num = class_num_max - class_num[1]
+	d = int(num/len(like_lst))
+	r = int(num%len(like_lst))
+	#print (d,r)
+	like_lst1 = []
+	for i in range(d):
+		like_lst1 = like_lst1 + like_lst
+	like_lst1 = like_lst1 + like_lst[:r]
+	#print (len(like_lst1))
 
-#7:3分训练集、验证集
-'''
-fw_train = open(folder_path + "train.txt", 'w') #改
-fw_test = open(folder_path + "test.txt", 'w') #改
-random.shuffle(lines_new)
-for i in range(len(lines_new)):
-	
-	if i%10 < 7:
-		fw_train.write(l)
-	else:
-		fw_test.write(l)'''
+	#hate
+	num = class_num_max - class_num[2]
+	d = int(num/len(hate_lst))
+	r = int(num%len(hate_lst))
+	#print (d,r)
+	hate_lst1 = []
+	for i in range(d):
+		hate_lst1 = hate_lst1 + hate_lst
+	hate_lst1 = hate_lst1 + hate_lst[:r]
+	#print (len(hate_lst1))
+
+	#sleep
+	num = class_num_max - class_num[3]
+	d = int(num/len(sleep_lst))
+	r = int(num%len(sleep_lst))
+	#print (d,r)
+	sleep_lst1 = []
+	for i in range(d):
+		sleep_lst1 = sleep_lst1 + sleep_lst
+	sleep_lst1 = sleep_lst1 + sleep_lst[:r]
+	#print (len(sleep_lst1))	
+
+	#样本类别均衡化处理、重写txt
+	lines_new = lines + handsup_lst1 + like_lst1 + hate_lst1 + sleep_lst1
+	print (len(lines_new))
+	'''
+	for i in range(len(lines_new)):
+		l = lines_new[i]
+		fw.write(l)
+	fw.close()'''
+
+	#7:3分训练集、验证集
+	num_train = 0
+	num_test = 0
+	random.shuffle(lines_new)
+	for i in range(len(lines_new)):
+		l = lines_new[i]
+		if i%10 < 7:
+			fw_train.write(l)
+			num_train = num_train + 1
+		else:
+			fw_test.write(l)
+			num_test = num_test + 1
+	print ("train.txt: ", num_train)
+	print ("test.txt: ", num_test)
+	fw_train.close()
+	fw_test.close()
 
